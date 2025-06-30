@@ -1,6 +1,3 @@
-// final worker = Worker("src/worker.js", WorkerOptions(type: "module"));
-// worker.postMessage({"command": "encrypt", "data": {}});
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:js' as js;

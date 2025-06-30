@@ -8,11 +8,11 @@ init:
 add:
 	$(fnw) add --dir=$(dir) --name=$(name)
 
-build:
-	$(fnw) add --dir=$(dir) --out-dir=$(out-dir)
+build-worker:
+	$(fnw) build --dir=$(dir) --out-dir=$(out-dir)
 
 install:
-	$(fnw) add --dir=$(dir)
+	$(fnw) install $(pkgs) --dir=$(dir)
 
 uninstall:
-	$(fnw) add --dir=$(dir)
+	$(fnw) uninstall $(pkgs) --dir=$(dir)

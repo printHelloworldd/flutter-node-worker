@@ -3,7 +3,7 @@ description: A package for using Web Workers written in Node.js with Dart in Flu
 version: 0.0.1
 homepage: https://github.com/printHelloworldd/flutter-node-worker
 issue_tracker: https://github.com/printHelloworldd/flutter-node-worker/issues
-documentation: https://github.com/printHelloworldd/flutter-node-worker/blob/main/README.md
+documentation: https://github.com/printHelloworldd/flutter-node-worker/blob/master/README.md
 
 platforms:
   web:
@@ -32,10 +32,18 @@ executables:
 flutter:
 
   assets:
-    - templates/
+    - lib/templates/
 
 topics:
   - cli
   - web
   - isolate
   - worker
+  - build-system
+  - codegen
+  - integration
+  - dart-js
+  - web-worker
+  - template
+  - vite
+  - nodejs

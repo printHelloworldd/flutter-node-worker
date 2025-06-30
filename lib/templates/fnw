@@ -1,4 +1,4 @@
-SCRIPT="dart run flutter_node_worker"
+SCRIPT="flutter_node_worker"
 
 show_help() {
   echo "Flutter Node Worker CLI"

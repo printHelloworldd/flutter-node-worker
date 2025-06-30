@@ -79,13 +79,7 @@ class Utils {
 
     for (var entity in srcDir.listSync(recursive: true)) {
       if (entity is File) {
-        // String relativePath = entity.path.substring(from.length + 1);
         String relativePath = p.relative(entity.path, from: srcDir.path);
-
-        // final isTemplate = relativePath.endsWith(".template");
-
-        // final outputPath =
-        // "${dstDir.path}/${isTemplate ? relativePath.replaceFirst(".template", "") : relativePath}";
 
         final String resolvedPath = await resolveTemplatePath(relativePath);
 
@@ -102,17 +96,11 @@ class Utils {
 
         final outputPath = "${dstDir.path}/$relativePath";
 
-        // if (isTemplate) {
         renderTemplateFile(
           inputPath: resolvedPath,
           outputPath: outputPath,
           variables: vars,
         );
-        // } else {
-        //   final outFile = File(outputPath);
-        //   outFile.createSync(recursive: true);
-        //   outFile.writeAsBytesSync(entity.readAsBytesSync());
-        // }
 
         if (relativePath.endsWith(".sh")) {
           Process.runSync("chmod", ["+x", outputPath]);
@@ -125,8 +113,6 @@ class Utils {
     final List<String> paths = [
       "$from/src/counter.js",
       "$from/src/javascript.svg",
-      // "$from/src/style.css",
-      // "$from/index.html",
     ];
 
     for (String path in paths) {
@@ -134,9 +120,5 @@ class Utils {
         File(path).deleteSync();
       }
     }
-
-    // if (Directory("$from/public").existsSync()) {
-    //   Directory("$from/public").deleteSync(recursive: true);
-    // }
   }
 }

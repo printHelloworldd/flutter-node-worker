@@ -1,4 +1,4 @@
-flutter_node_worker
+
 ## 📖 Description
 
 `flutter_node_worker` is a tool and library for Flutter Web that enables **[multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) via [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)** written in [Node.js](https://nodejs.org/).
@@ -34,6 +34,7 @@ This is especially useful for cryptographic operations, parsing, computing, and 
 ---
 
 ## Table of contents
+
 - [📖 Description](#-description)
 - [📦 Features](#-features)
 - [🧠 Where to use](#-where-to-use)
@@ -49,7 +50,12 @@ This is especially useful for cryptographic operations, parsing, computing, and 
 - [📚 API](#-api)
   - [`FlutterNodeWorker`](#flutternodeworker)
     - [Methods](#methods)
-- [📦 CLI commands](#-cli-commands)
+- [CLI-commands](#cli-commands)
+  - [`init` — Generate worker template](#init--generate-worker-template)
+  - [`build` — Build worker module via Vite](#build--build-worker-module-via-vite)
+  - [`add` — Add new worker script](#add--add-new-worker-script)
+  - [`install` — Install npm package to worker](#install--install-npm-package-to-worker)
+  - [`uninstall` — Remove npm package](#uninstall--remove-npm-package)
   - [CLI Arguments](#cli-arguments)
 - [🛠️ Dependencies](#️-dependencies)
 - [🖼️ Demo](#️-demo)
@@ -84,10 +90,14 @@ flutter pub get
 
 #### 1. Initialize a new worker
 ```bash
-dart run fnw init --dir my_worker --name encryptor
+dart run flutter_node_worker init --dir my_worker --name encryptor
 ```
 
 Creates a template in the `my_worker/` folder with the worker name `encryptor`.
+
+Additionally, this will generate a `Makefile` and a Bash script `fnw` in your project root, allowing you to run commands with shorter syntax.
+
+📌 See [CLI-commands](#CLI-commands) below for details on using `dart run`, `./fnw`, or `make`.
 
 #### 2. 🔒 Write the worker logic
 
@@ -113,7 +123,7 @@ function encrypt(message, password) {
 If the worker will use a third-party library, it can be imported as an ES module, but don't forget to install it using:
 
 ```bash
-dart run fnw install <package-name> --dir my_worker
+dart run flutter_node_worker install <package-name> --dir my_worker
 ```
 
 *or:*
@@ -126,7 +136,7 @@ npm install <package-name>
 #### 3. Build a module worker
 
 ```bash
-dart run fnw build --dir my_worker --out-dir web/workers
+dart flutter_node_worker fnw build --dir my_worker --out-dir ../web/workers
 ```
 
 _or:_
@@ -136,7 +146,8 @@ cd my_worker
 npm run build
 ```
 
-Creates a built module worker in `web/workers/` with the worker name + module.js (in this example `encryptor_module.js`). It can now be used in Dart code. If you do not specify `--out-dir`, the worker will be built in `my_worker/dist/`
+Creates a built module worker in `web/workers/` with the worker name + module.js (in this example `encryptor_module.js`). It can now be used in Dart code. If you do not specify `--out-dir`, the worker will be built in `my_worker/dist/`. The `--out-dir` should be specified **relative to the worker's directory**, not the project root.  
+For example, if your worker is in `my_worker`, use `--out-dir=../web/workers`.
 
 ---
 
@@ -190,22 +201,70 @@ FlutterNodeWorker({required String path})
 
 ---
 
-## 📦 CLI commands
+## CLI-commands
 
-- `init` — Generates worker template  
-    `dart run fnw init --dir my_worker --name encryptor`
-    
-- `build` — Builds worker module via Vite
-    `dart run fnw build --dir my_worker --out-dir web/workers`
-    
-- `add` — Adds new worker script
-    `dart run fnw add --dir my_worker --name decryptor`
-    
-- `install` — Installs `npm` package
-    `dart run fnw install <package-name> --dir my_worker`
-    
-- `uninstall` — Removes `npm` package  
-    `dart run fnw uninstall <package-name> --dir my_worker`
+Each command can be run in **one of three ways**:
+
+| Method      | Example                                                              |
+| ----------- | -------------------------------------------------------------------- |
+| `dart run`  | `dart run flutter_node_worker init --dir my_worker --name encryptor` |
+| Bash script | `./fnw init --dir my_worker --name encryptor`                        |
+| Makefile    | `make init dir=my_worker name=encryptor`                             |
+
+---
+
+### `init` — Generate worker template
+
+```bash
+dart run flutter_node_worker init --dir my_worker --name encryptor
+./fnw init --dir my_worker --name encryptor
+make init dir=my_worker name=encryptor
+```
+
+---
+
+### `build` — Build worker module via Vite
+
+```bash
+dart run flutter_node_worker build --dir my_worker --out-dir ../web/workers
+./fnw build --dir my_worker --out-dir ../web/workers
+make build-worker dir=my_worker out-dir=../web/workers
+```
+
+The `--out-dir` should be specified **relative to the worker's directory**, not the project root.  
+For example, if your worker is in `my_worker`, use `--out-dir=../web/workers`.
+
+---
+
+### `add` — Add new worker script
+
+```bash
+dart run flutter_node_worker add --dir my_worker --name decryptor
+./fnw add --dir my_worker --name decryptor
+make add dir=my_worker name=decryptor
+```
+
+---
+
+### `install` — Install npm package to worker
+
+```bash
+dart run flutter_node_worker install uuid --dir my_worker
+./fnw install uuid --dir my_worker
+make install dir=my_worker pkgs=uuid
+```
+
+---
+
+### `uninstall` — Remove npm package
+
+```bash
+dart run flutter_node_worker uninstall uuid --dir my_worker
+./fnw uninstall uuid --dir my_worker
+make uninstall dir=my_worker pkgs=uuid
+```
+
+---
 
 ### CLI Arguments
 
@@ -213,7 +272,7 @@ FlutterNodeWorker({required String path})
 | ----------- | ------------ | ----------------------------------------------------------------------------- |
 | `--dir`     | `-d`         | The directory in which the command is executed (`init`, `build`, `add`, etc.) |
 | `--name`    | `-n`         | Worker name when initializing or adding a new one                             |
-| `--out-dir` | `-o`         | The directory where the worker will be compiled                               |
+| `--out-dir` | `-o`         | Directory where the compiled module will be placed                            |
 
 ---
 

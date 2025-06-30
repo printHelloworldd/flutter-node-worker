@@ -17,7 +17,6 @@ Future<void> main(List<String> arguments) async {
     "dir": {"abbr": "d", "defaultsTo": "workers"},
     "name": {"abbr": "n", "defaultsTo": "worker"},
     "out-dir": {"abbr": "o", "defaultsTo": "dist"},
-    // "no-save": {},
   };
 
   ArgParser parser = ArgParser();
@@ -90,7 +89,6 @@ Future<void> _handleInit(ArgResults initArgs) async {
     "vanilla",
   ], runInShell: true);
 
-  // Process.runSync("npm", ["install", "vite", "-D"], runInShell: true);
   Process.runSync("npm", ["install"], runInShell: true);
 
   final resolvedPath = await Utils.resolveTemplatePath('/');
