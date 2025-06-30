@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart';
 ///
 /// This class provides an interface for spawning a worker, sending commands,
 /// receiving responses, and optionally terminating the worker.
-class FlutterNodeWebworker {
+class FlutterNodeWorker {
   /// Path to the JavaScript worker file.
   final String path;
 
@@ -23,7 +23,7 @@ class FlutterNodeWebworker {
   ///
   /// The [path] must point to a valid JavaScript module that can be run
   /// in a `Worker` environment.
-  FlutterNodeWebworker({required this.path}) {
+  FlutterNodeWorker({required this.path}) {
     _spawn(path);
   }
 

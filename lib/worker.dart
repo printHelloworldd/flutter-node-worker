@@ -3,7 +3,7 @@
 
 import 'dart:js_interop';
 
-import 'package:fmw/worker_options.dart';
+import 'package:flutter_node_worker/worker_options.dart';
 
 @JS('Worker')
 class Worker {

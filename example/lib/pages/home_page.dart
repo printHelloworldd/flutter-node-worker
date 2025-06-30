@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fmw/flutter_node_webworker.dart';
+import 'package:flutter_node_worker/flutter_node_worker.dart';
 import 'package:lottie/lottie.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,7 +15,7 @@ class _HomePageState extends State<HomePage> {
 
   String output = "Output is empty";
 
-  final worker = FlutterNodeWebworker(path: "/workers/cipher_module.js");
+  final worker = FlutterNodeWorker(path: "/workers/cipher_module.js");
 
   Future<String> encryptText(String text, String psw) async {
     final result = await worker.compute(

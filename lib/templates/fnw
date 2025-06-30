@@ -1,0 +1,20 @@
+SCRIPT="dart run flutter_node_worker"
+
+show_help() {
+  echo "Flutter Node Worker CLI"
+  echo ""
+  echo "Available commands:"
+  echo "  init --dir=DIR --name=NAME          - Initialize worker"
+  echo "  add --name=NAME                     - Add worker"
+  echo "  build --dir=DIR --out-dir=OUTDIR    - Build workers"
+  echo "  help                                - Show help"
+  echo ""
+  echo "Example: ./fnw init --dir=workers --name=cipher"
+}
+
+if [[ "$1" == "help" || "$1" == "" ]]; then
+  show_help
+  exit 0
+fi
+
+dart run "$SCRIPT" "$@"

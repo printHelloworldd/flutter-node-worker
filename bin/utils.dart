@@ -1,18 +1,28 @@
-import 'dart:io';
-import 'dart:isolate';
+import "dart:io";
+import "dart:isolate";
 
-import 'package:mustache_template/mustache.dart';
-import 'package:path/path.dart' as p;
-import 'constants.dart';
+import "package:mustache_template/mustache.dart";
+import "package:path/path.dart" as p;
+import "constants.dart";
 
 class Utils {
   static Future<String> resolveTemplatePath(String relativePath) async {
     final uri = Uri.parse("package:$packageName/templates/$relativePath");
     final resolved = await Isolate.resolvePackageUri(uri);
-    if (resolved == null) {
-      throw Exception("Failed to resolve template path: $relativePath");
-    }
 
+    if (resolved == null) {
+      // Fallback для локальной разработки
+      final scriptDir = File.fromUri(Platform.script).parent;
+      final rootDir =
+          scriptDir.path.contains('/example/')
+              ? Directory(p.normalize(p.join(scriptDir.path, '../'))).absolute
+              : Directory.current;
+      final fullPath = p.join(rootDir.path, 'templates', relativePath);
+      if (!File(fullPath).existsSync()) {
+        throw Exception("Template not found: $fullPath");
+      }
+      return fullPath;
+    }
     return resolved.toFilePath(windows: Platform.isWindows);
   }
 
@@ -24,13 +34,40 @@ class Utils {
     final raw = File(inputPath).readAsStringSync();
     final template = Template(raw, htmlEscapeValues: false);
     final rendered = template.renderString(variables);
-    File(outputPath).createSync(recursive: true);
-    File(outputPath).writeAsStringSync(rendered);
+
+    final outputFile = File(outputPath);
+
+    if (outputFile.existsSync()) {
+      stdout.write(
+        "The file '$outputPath' already exists. [O]verwrite/[A]ppend/[S]kip? (O/A/S, Enter=O): ",
+      );
+      final choice = stdin.readLineSync()?.trim().toUpperCase();
+      if (choice == "S") {
+        print("Skipped: $outputPath");
+        return;
+      } else if (choice == "A") {
+        outputFile.writeAsStringSync("\n$rendered", mode: FileMode.append);
+        print("Added to the end: $outputPath");
+        return;
+      } else if (choice == "O" || choice == null || choice.isEmpty) {
+        outputFile.writeAsStringSync(rendered);
+        print("File overwritten: $outputPath");
+        return;
+      } else {
+        print("Unknown choice, skipped: $outputPath");
+        return;
+      }
+    } else {
+      outputFile.createSync(recursive: true);
+    }
+
+    outputFile.writeAsStringSync(rendered);
   }
 
   static Future<void> copyAndRenderTemplates({
     required String from,
     required String to,
+    required String targetWorkerDir,
     required Map<String, String> vars,
   }) async {
     final srcDir = Directory(from);
@@ -50,13 +87,21 @@ class Utils {
         // final outputPath =
         // "${dstDir.path}/${isTemplate ? relativePath.replaceFirst(".template", "") : relativePath}";
 
+        final String resolvedPath = await resolveTemplatePath(relativePath);
+
         if (vars.containsKey("workerName") && vars["workerName"]!.isNotEmpty) {
           relativePath = relativePath.replaceAll("worker", vars["workerName"]!);
         }
 
+        if (relativePath.startsWith("vite/")) {
+          relativePath = relativePath.replaceFirst(
+            "vite/",
+            "$targetWorkerDir/",
+          );
+        }
+
         final outputPath = "${dstDir.path}/$relativePath";
 
-        final String resolvedPath = await resolveTemplatePath(relativePath);
         // if (isTemplate) {
         renderTemplateFile(
           inputPath: resolvedPath,
@@ -68,6 +113,10 @@ class Utils {
         //   outFile.createSync(recursive: true);
         //   outFile.writeAsBytesSync(entity.readAsBytesSync());
         // }
+
+        if (relativePath.endsWith(".sh")) {
+          Process.runSync("chmod", ["+x", outputPath]);
+        }
       }
     }
   }

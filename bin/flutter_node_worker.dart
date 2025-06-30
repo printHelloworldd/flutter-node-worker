@@ -1,7 +1,6 @@
 import "dart:io";
 import "package:args/args.dart";
 import 'package:path/path.dart' as p;
-import 'constants.dart';
 import 'utils.dart';
 
 Future<void> main(List<String> arguments) async {
@@ -94,10 +93,13 @@ Future<void> _handleInit(ArgResults initArgs) async {
   // Process.runSync("npm", ["install", "vite", "-D"], runInShell: true);
   Process.runSync("npm", ["install"], runInShell: true);
 
+  final resolvedPath = await Utils.resolveTemplatePath('/');
+
   await Utils.copyAndRenderTemplates(
-    from: "package:$packageName/templates",
-    to: dir,
+    from: resolvedPath,
+    to: "./",
     vars: {"workerName": name},
+    targetWorkerDir: dir,
   );
 
   Utils.clearDirectory(dir);
@@ -174,7 +176,7 @@ void _handleBuildAll(ArgResults initArgs) {
   print("🎉 All workers built!");
 }
 
-void _handleAdd(ArgResults initArgs) {
+void _handleAdd(ArgResults initArgs) async {
   print("Adding new worker...");
 
   final String dir = initArgs["dir"] as String;
@@ -185,10 +187,12 @@ void _handleAdd(ArgResults initArgs) {
     throw Exception("No such derectory: $dir");
   }
 
+  final resolvedPath = await Utils.resolveTemplatePath('vite/src/worker.js');
+
   Utils.renderTemplateFile(
-    inputPath: "templates/src/worker.js",
-    outputPath: "$dir/src/$name.js",
-    variables: {"workerName": name},
+    inputPath: resolvedPath,
+    outputPath: '$dir/src/$name.js',
+    variables: {'workerName': name},
   );
 
   print("Added worker to $dir");
