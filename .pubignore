@@ -1,0 +1,14 @@
+build/
+example/
+test/
+.vscode/
+.idea/
+*.iml
+node_modules/
+*.log
+*.lock
+*.tmp
+.DS_Store
+.git/
+.dart_tool/
+pubspec.lock

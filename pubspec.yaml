@@ -36,14 +36,7 @@ flutter:
 
 topics:
   - cli
-  - web
-  - isolate
-  - worker
-  - build-system
-  - codegen
-  - integration
-  - dart-js
   - web-worker
-  - template
-  - vite
+  - isolate
+  - dart-js
   - nodejs
