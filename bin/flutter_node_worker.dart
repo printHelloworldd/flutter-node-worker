@@ -80,6 +80,8 @@ Future<void> _handleInit(ArgResults initArgs) async {
     targetDir.createSync(recursive: true);
   }
 
+  Process.runSync("npm", ["install", "vite"], runInShell: true);
+
   Process.runSync("npm", [
     "create",
     "vite@latest",
@@ -88,8 +90,6 @@ Future<void> _handleInit(ArgResults initArgs) async {
     "--template",
     "vanilla",
   ], runInShell: true);
-
-  Process.runSync("npm", ["install"], runInShell: true);
 
   final resolvedPath = await Utils.resolveTemplatePath('/');
 

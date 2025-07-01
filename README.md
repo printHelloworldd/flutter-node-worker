@@ -136,7 +136,7 @@ npm install <package-name>
 #### 3. Build a module worker
 
 ```bash
-dart flutter_node_worker fnw build --dir my_worker --out-dir ../web/workers
+dart run flutter_node_worker build --dir my_worker --out-dir ../web/workers
 ```
 
 _or:_
