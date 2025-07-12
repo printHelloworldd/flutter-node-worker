@@ -44,6 +44,7 @@ This is especially useful for cryptographic operations, parsing, computing, and 
   - [🚀 Quick start and usage example](#-quick-start-and-usage-example)
     - [1. Initialize a new worker](#1-initialize-a-new-worker)
     - [2. 🔒 Write the worker logic](#2--write-the-worker-logic)
+      - [Worker Response Format](#worker-response-format)
     - [3. Build a module worker](#3-build-a-module-worker)
     - [4. Use a worker in Flutter Web](#4-use-a-worker-in-flutter-web)
 - [🧩 Structure](#-structure)
@@ -59,7 +60,6 @@ This is especially useful for cryptographic operations, parsing, computing, and 
   - [CLI Arguments](#cli-arguments)
 - [🛠️ Dependencies](#️-dependencies)
 - [🖼️ Demo](#️-demo)
-- [🚀 What's Next](#-whats-next)
 - [🤝 Support](#-support)
 - [🤝 Contributors](#-contributors)
 
@@ -133,6 +133,39 @@ cd my_worker
 npm install <package-name>
 ```
 
+##### Worker Response Format
+> The worker **must return a `String` representation of a `Map`** (i.e., a JSON object).  
+> This response **must include a `status` field**, which should be either `"success"` or `"error"`.
+
+Use `JSON.stringify()` to serialize your result before sending it:
+
+```js
+// ✅ Correct: sending a valid JSON string with required `status` field
+postMessage(JSON.stringify({
+  status: "success",
+  data: {
+    encrypted: "abc123"
+  }
+}));
+
+// ❌ Incorrect: sending a raw object (will fail in Dart)
+postMessage({
+  status: "success",
+  data: {
+    encrypted: "abc123"
+  }
+}); // ❌ Will cause an error — Dart expects a String
+
+// ❌ Incorrect: missing `status` field
+postMessage(JSON.stringify({
+  data: {
+    encrypted: "abc123"
+  }
+}));
+```
+
+In Dart, this response will be automatically parsed with `jsonDecode()` into a `Map<String, dynamic>`. The `status` field is used to determine whether the operation was successful or resulted in an error.
+
 #### 3. Build a module worker
 
 ```bash
@@ -194,6 +227,8 @@ FlutterNodeWorker({required String path})
     - If `computeOnce = true` _(default is `false`)_, the worker will automatically exit after the command is executed - useful for rare operations like generating cryptographic keys on registration.
         
     - If `computeOnce = false`, the worker remains active, which is suitable for frequent tasks such as encrypting chat messages.
+	
+    - `timeoutDuration` — a `Duration` specifying the maximum amount of time to wait for a response from the worker. If no response is received within this period, a `TimeoutException` will be thrown.
         
 - `terminate()`  
     Manually terminates the worker, freeing up resources.
@@ -303,20 +338,6 @@ For clarity, an animation has been added demonstrating that the main thread is n
 By opening DevTools → **Sources → Threads**, you can see the active threads, including the Web Worker (`cipher_module.js`), where the calculation takes place.
 
 [CHECK WEB DEMO](https://flutter-node-worker-demo.web.app/)
-
----
-
-## 🚀 What's Next
-
-- [ ] Cover the project with unit and integration tests
-
-- [ ] Switch from `dart:js` to `dart:js_interop` for safer and more typed work with JavaScript
-
-- [ ] Improve Web Worker error handling
-
-- [ ] Add logging and notifications when the worker crashes
-
-- [ ] Support for custom templates and configurations
 
 ---
 

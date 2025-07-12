@@ -51,6 +51,8 @@ class FlutterNodeWorker {
   /// - [data] is a map of arguments passed to the worker.
   /// - [computeOnce] determines whether the worker should be terminated
   ///   after a single execution.
+  /// - [timeoutDuration] is a `Duration` specifying the maximum amount of time to wait for a response from the worker.
+  ///   If no response is received within this period, a `TimeoutException` will be thrown.
   ///
   /// Returns a [Future] containing the result sent from the worker,
   /// or `null` if the result could not be parsed.

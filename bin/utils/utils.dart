@@ -3,19 +3,28 @@ import "dart:isolate";
 
 import "package:mustache_template/mustache.dart";
 import "package:path/path.dart" as p;
-import "package:talker/talker.dart";
 import "constants.dart";
+import 'logger.dart';
 
-final Talker logger = Talker();
-
+/// A utility class that provides helper methods for handling template files,
+/// rendering them with variable substitution, copying and modifying files,
+/// and cleaning up generated directories.
 class Utils {
+  /// Resolves the full file system path to a template file given its [relativePath]
+  /// within the package.
+  ///
+  /// It first attempts to resolve the path using `Isolate.resolvePackageUri`.
+  /// If that fails (e.g. during local development), it falls back to computing
+  /// the path manually from the script's location.
+  ///
+  /// Throws an [Exception] if the resolved file does not exist.
   static Future<String> resolveTemplatePath(String relativePath) async {
     try {
       final uri = Uri.parse("package:$packageName/templates/$relativePath");
       final resolved = await Isolate.resolvePackageUri(uri);
 
       if (resolved == null) {
-        // Fallback для локальной разработки
+        // Fallback for local development
         final scriptDir = File.fromUri(Platform.script).parent;
         final rootDir = scriptDir.path.contains('/example/')
             ? Directory(p.normalize(p.join(scriptDir.path, '../'))).absolute
@@ -31,10 +40,17 @@ class Utils {
       return resolved.toFilePath(windows: Platform.isWindows);
     } catch (e, st) {
       logger.handle(e, st);
-      throw Exception("Failed to resolve template path");
+      throw Exception("Failed to resolve template path: $e");
     }
   }
 
+  /// Renders a single template file located at [inputPath] and writes the rendered
+  /// output to [outputPath], substituting variables from [variables].
+  ///
+  /// If the output file already exists, prompts the user whether to:
+  /// - Overwrite the file (`O`)
+  /// - Append the rendered output to the end (`A`)
+  /// - Skip rendering this file (`S`)
   static void renderTemplateFile({
     required String inputPath,
     required String outputPath,
@@ -73,6 +89,15 @@ class Utils {
     outputFile.writeAsStringSync(rendered);
   }
 
+  /// Recursively copies and renders all template files from the [from] directory
+  /// to the [to] directory.
+  ///
+  /// Replaces template variable placeholders using [vars].
+  ///
+  /// Adjusts paths dynamically based on the presence of the `workerName` variable
+  /// or if the file is under the `vite/` directory (which is replaced with [targetWorkerDir]).
+  ///
+  /// Makes shell scripts (`.sh` files) executable by running `chmod +x`.
   static Future<void> copyAndRenderTemplates({
     required String from,
     required String to,
@@ -124,6 +149,9 @@ class Utils {
     }
   }
 
+  /// Deletes specific generated files from the [from] directory.
+  ///
+  /// This method is typically used to clean up files that are no longer needed.
   static void clearDirectory(String from) {
     final List<String> paths = [
       "$from/src/counter.js",

@@ -1,5 +1,6 @@
 build/
 test/
+example/web/firebase_config.js
 .vscode/
 .idea/
 *.iml
