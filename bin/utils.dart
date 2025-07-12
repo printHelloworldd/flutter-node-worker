@@ -3,27 +3,36 @@ import "dart:isolate";
 
 import "package:mustache_template/mustache.dart";
 import "package:path/path.dart" as p;
+import "package:talker/talker.dart";
 import "constants.dart";
+
+final Talker logger = Talker();
 
 class Utils {
   static Future<String> resolveTemplatePath(String relativePath) async {
-    final uri = Uri.parse("package:$packageName/templates/$relativePath");
-    final resolved = await Isolate.resolvePackageUri(uri);
+    try {
+      final uri = Uri.parse("package:$packageName/templates/$relativePath");
+      final resolved = await Isolate.resolvePackageUri(uri);
 
-    if (resolved == null) {
-      // Fallback для локальной разработки
-      final scriptDir = File.fromUri(Platform.script).parent;
-      final rootDir =
-          scriptDir.path.contains('/example/')
-              ? Directory(p.normalize(p.join(scriptDir.path, '../'))).absolute
-              : Directory.current;
-      final fullPath = p.join(rootDir.path, 'templates', relativePath);
-      if (!File(fullPath).existsSync()) {
-        throw Exception("Template not found: $fullPath");
+      if (resolved == null) {
+        // Fallback для локальной разработки
+        final scriptDir = File.fromUri(Platform.script).parent;
+        final rootDir = scriptDir.path.contains('/example/')
+            ? Directory(p.normalize(p.join(scriptDir.path, '../'))).absolute
+            : Directory.current;
+        final fullPath = p.join(rootDir.path, 'templates', relativePath);
+
+        if (!File(fullPath).existsSync()) {
+          throw Exception("Template not found: $fullPath");
+        }
+
+        return fullPath;
       }
-      return fullPath;
+      return resolved.toFilePath(windows: Platform.isWindows);
+    } catch (e, st) {
+      logger.handle(e, st);
+      throw Exception("Failed to resolve template path");
     }
-    return resolved.toFilePath(windows: Platform.isWindows);
   }
 
   static void renderTemplateFile({
@@ -43,18 +52,18 @@ class Utils {
       );
       final choice = stdin.readLineSync()?.trim().toUpperCase();
       if (choice == "S") {
-        print("Skipped: $outputPath");
+        logger.info("Skipped: $outputPath");
         return;
       } else if (choice == "A") {
         outputFile.writeAsStringSync("\n$rendered", mode: FileMode.append);
-        print("Added to the end: $outputPath");
+        logger.info("Added to the end: $outputPath");
         return;
       } else if (choice == "O" || choice == null || choice.isEmpty) {
         outputFile.writeAsStringSync(rendered);
-        print("File overwritten: $outputPath");
+        logger.info("File overwritten: $outputPath");
         return;
       } else {
-        print("Unknown choice, skipped: $outputPath");
+        logger.info("Unknown choice, skipped: $outputPath");
         return;
       }
     } else {
@@ -70,42 +79,48 @@ class Utils {
     required String targetWorkerDir,
     required Map<String, String> vars,
   }) async {
-    final srcDir = Directory(from);
-    final dstDir = Directory(to);
+    try {
+      final srcDir = Directory(from);
+      final dstDir = Directory(to);
 
-    if (!srcDir.existsSync()) {
-      throw Exception("The templates was not found: $from");
-    }
+      if (!srcDir.existsSync()) {
+        throw Exception("The templates was not found: $from");
+      }
 
-    for (var entity in srcDir.listSync(recursive: true)) {
-      if (entity is File) {
-        String relativePath = p.relative(entity.path, from: srcDir.path);
+      for (var entity in srcDir.listSync(recursive: true)) {
+        if (entity is File) {
+          String relativePath = p.relative(entity.path, from: srcDir.path);
 
-        final String resolvedPath = await resolveTemplatePath(relativePath);
+          final String resolvedPath = await resolveTemplatePath(relativePath);
 
-        if (vars.containsKey("workerName") && vars["workerName"]!.isNotEmpty) {
-          relativePath = relativePath.replaceAll("worker", vars["workerName"]!);
-        }
+          if (vars.containsKey("workerName") &&
+              vars["workerName"]!.isNotEmpty) {
+            relativePath =
+                relativePath.replaceAll("worker", vars["workerName"]!);
+          }
 
-        if (relativePath.startsWith("vite/")) {
-          relativePath = relativePath.replaceFirst(
-            "vite/",
-            "$targetWorkerDir/",
+          if (relativePath.startsWith("vite/")) {
+            relativePath = relativePath.replaceFirst(
+              "vite/",
+              "$targetWorkerDir/",
+            );
+          }
+
+          final outputPath = "${dstDir.path}/$relativePath";
+
+          renderTemplateFile(
+            inputPath: resolvedPath,
+            outputPath: outputPath,
+            variables: vars,
           );
-        }
 
-        final outputPath = "${dstDir.path}/$relativePath";
-
-        renderTemplateFile(
-          inputPath: resolvedPath,
-          outputPath: outputPath,
-          variables: vars,
-        );
-
-        if (relativePath.endsWith(".sh")) {
-          Process.runSync("chmod", ["+x", outputPath]);
+          if (relativePath.endsWith(".sh")) {
+            Process.runSync("chmod", ["+x", outputPath]);
+          }
         }
       }
+    } catch (e, st) {
+      logger.handle(e, st);
     }
   }
 

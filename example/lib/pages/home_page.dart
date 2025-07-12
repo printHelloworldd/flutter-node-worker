@@ -15,7 +15,13 @@ class _HomePageState extends State<HomePage> {
 
   String output = "Output is empty";
 
-  final worker = FlutterNodeWorker(path: "/workers/cipher_module.js");
+  late FlutterNodeWorker worker;
+
+  @override
+  void initState() {
+    super.initState();
+    worker = FlutterNodeWorker(path: "/workers/cipher_module.js");
+  }
 
   Future<String> encryptText(String text, String psw) async {
     final result = await worker.compute(

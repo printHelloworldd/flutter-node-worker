@@ -1,8 +1,11 @@
+import 'dart:js_interop';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:js' as js;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_node_worker/message_event.dart';
+import 'package:flutter_node_worker/worker.dart';
+import 'package:flutter_node_worker/worker_options.dart';
 
 /// A utility class for interacting with JavaScript Web Workers from Dart/Flutter,
 /// using a JavaScript module as the worker entry point.
@@ -14,13 +17,15 @@ class FlutterNodeWorker {
   final String path;
 
   /// The internal reference to the JavaScript `Worker` object.
-  js.JsObject? worker;
+  Worker? worker;
 
   /// Creates an instance of [FlutterNodeWebworker] and spawns the worker.
   ///
   /// The [path] must point to a valid JavaScript module that can be run
   /// in a `Worker` environment.
-  FlutterNodeWorker({required this.path}) {
+  FlutterNodeWorker({
+    required this.path,
+  }) {
     _spawn(path);
   }
 
@@ -28,17 +33,15 @@ class FlutterNodeWorker {
   ///
   /// If a worker is already running, this method does nothing.
   void _spawn(String path) {
-    // terminate();
     if (worker != null) return;
 
-    final workerOptions = js.JsObject.jsify({"type": "module"});
-    final workerConstructor = js.context["Worker"];
-    worker = js.JsObject(workerConstructor, [path, workerOptions]);
+    final workerOptions = WorkerOptions(type: "module");
+    worker = Worker(path, workerOptions);
   }
 
   /// Terminates the current worker if one is active and resets the internal reference.
   void terminate() {
-    worker?.callMethod("terminate");
+    worker?.terminate();
     worker = null;
   }
 
@@ -57,19 +60,21 @@ class FlutterNodeWorker {
     required String command,
     required Map<String, dynamic> data,
     bool computeOnce = false,
+    Duration timeoutDuration = const Duration(seconds: 10),
   }) async {
-    final completer = Completer<Map<String, dynamic>?>();
+    try {
+      late final JSFunction jsHandler;
+      final completer = Completer<Map<String, dynamic>?>();
 
-    if (worker == null) {
-      _spawn(path);
-    }
+      if (worker == null) {
+        _spawn(path);
+      }
 
-    void handler(jsEvent) {
-      final event = js.JsObject.fromBrowserObject(jsEvent);
-      final jsData = event["data"];
+      jsHandler = ((MessageEvent jsEvent) {
+        final JSAny? jsData = jsEvent.data;
 
-      if (jsData is String) {
-        final Map<String, dynamic> parsed = jsonDecode(jsData);
+        final Map<String, dynamic> parsed =
+            jsonDecode(jsData.dartify() as String);
 
         if (kDebugMode) {
           print("Parsed from worker: $parsed");
@@ -84,21 +89,31 @@ class FlutterNodeWorker {
             terminate();
           }
 
-          worker?.callMethod("removeEventListener", ["message", handler]);
+          worker?.removeEventListener("message", jsHandler);
         }
-      } else {
-        throw Exception(
-          "Worker has returned unexpected data type ${jsData.runtimeType}. Expected String type",
-        );
-      }
+      }).toJS;
+
+      worker?.addEventListener("message", jsHandler);
+
+      worker?.postMessage(
+        ({"command": command, "data": data}).jsify(),
+      );
+
+      return completer.future.timeout(
+        timeoutDuration,
+        onTimeout: () {
+          worker?.removeEventListener("message", jsHandler);
+          if (computeOnce) terminate();
+          throw TimeoutException(
+            "Worker timeout: no response in ${timeoutDuration.inSeconds} seconds.",
+            timeoutDuration,
+          );
+        },
+      );
+    } catch (e) {
+      throw Exception(
+        "Worker has returned error ${e.toString()}.",
+      );
     }
-
-    worker?.callMethod("addEventListener", ["message", handler]);
-
-    worker?.callMethod("postMessage", [
-      js.JsObject.jsify({"command": command, "data": data}),
-    ]);
-
-    return completer.future;
   }
 }
