@@ -1,15 +1,16 @@
-// @JS()
-// library worker_api;
-
 import 'dart:js_interop';
 
 import 'package:flutter_node_worker/worker_options.dart';
 
-@JS('Worker')
+@JS("Worker")
+@staticInterop
 class Worker {
   external factory Worker(String path, WorkerOptions options);
+}
 
-  external void postMessage(dynamic data);
-  external void addEventListener(String type, Function listener);
+extension WorkerExtension on Worker {
+  external void postMessage(JSAny? data);
+  external void addEventListener(String type, JSFunction listener);
+  external void removeEventListener(String type, JSFunction listener);
   external void terminate();
 }
