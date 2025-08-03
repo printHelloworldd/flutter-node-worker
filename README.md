@@ -323,9 +323,11 @@ make uninstall dir=my_worker pkgs=uuid
     
 - [mustache_template](https://pub.dev/packages/mustache_template)
     
-- [dart:js, dart:js_interop](https://dart.dev/web/js-interop)
+- [dart:js_interop](https://dart.dev/web/js-interop)
 	
 - [path](https://pub.dev/packages/path)
+
+- [talker](https://pub.dev/packages/talker)
     
 
 ---
